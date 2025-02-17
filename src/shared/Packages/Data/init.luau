@@ -14,52 +14,42 @@ local Settings = require(script.Components.Settings)
 local Data = {}
 Data.__index = Data
 
-function Data.new()
-	local self = setmetatable({}, Data)
+local DataSingleton = setmetatable({}, Data)
 
+function DataSingleton:initialize()
 	self._playerToken = Replica.Token("PlayerData")
 	self._playerStore = ProfileStore.New("PlayerStore", Settings.TEMPLATE)
 	if RunService:IsStudio() and Settings.DEBUG_MOCK then
-		print(` i'm m o C k ing yuou`)
+		print("I'm mocking you")
 		self._playerStore = self._playerStore.Mock
 	end
 
 	self._profiles = {} :: { [Player]: typeof(self._playerStore:StartSessionAsync()) }
-
-	self:_initialize()
-
-	return self
+	self:_observePlayers()
 end
 
--- API
-function Data:GetProfileAsync(player: Player)
-	local profile = nil
-	while profile == nil and player.Parent == Players do
-		profile = self._profiles[player]
+function DataSingleton:GetProfileAsync(player: Player)
+	while not self._profiles[player] and player.Parent == Players do
 		task.wait()
 	end
-
-	return profile
+	return self._profiles[player]
 end
 
--- INTERNAL
-function Data:_playerAdded(player: Player)
+function DataSingleton:_playerAdded(player: Player)
 	local profile = nil
-
 	while player.Parent == Players and not ProfileStore.IsClosing do
 		profile = self._playerStore:StartSessionAsync(`{player.UserId}{Settings.SUFFIX}`, {
 			Cancel = function()
 				return player.Parent ~= Players
 			end,
 		})
-
-		if profile ~= nil then
+		if profile then
 			break
 		end
 	end
 
-	if profile == nil then
-		player:Kick(`{Settings.LOAD_FAILED_MESSAGE}`)
+	if not profile then
+		player:Kick(Settings.LOAD_FAILED_MESSAGE)
 		return
 	end
 
@@ -68,7 +58,7 @@ function Data:_playerAdded(player: Player)
 
 	profile.OnSessionEnd:Connect(function()
 		self._profiles[player] = nil
-		player:Kick(`{Settings.SEESION_END_MESSAGE}`)
+		player:Kick(Settings.SEESION_END_MESSAGE)
 	end)
 
 	if player.Parent ~= Players then
@@ -78,21 +68,18 @@ function Data:_playerAdded(player: Player)
 	local replica = Replica.New({
 		Token = self._playerToken,
 		Data = profile.Data,
-		Tags = {
-			Player = player,
-		},
+		Tags = { Player = player },
 	})
 	replica:Replicate()
 
 	self._profiles[player] = PlayerProfile.new(player, profile, replica)
 end
 
-function Data:_initialize()
+function DataSingleton:_observePlayers()
 	observePlayer(function(player)
 		self:_playerAdded(player)
-
 		return function()
-			local profile = self._profiles[player]:GetProfile()
+			local profile = self._profiles[player] and self._profiles[player]:GetProfile()
 			if profile then
 				profile:EndSession()
 			end
@@ -100,4 +87,4 @@ function Data:_initialize()
 	end)
 end
 
-return Data
+return DataSingleton
