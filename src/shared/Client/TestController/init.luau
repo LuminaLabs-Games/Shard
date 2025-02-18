@@ -1,6 +1,8 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Cache = require(ReplicatedStorage.Packages.Cache)
 local GetModule = require(ReplicatedStorage.Packages.GetModule)
+local Queue = require(ReplicatedStorage.Packages.Queue)
 local TestController = {}
 TestController.__index = TestController
 
@@ -15,9 +17,16 @@ function TestController:initialize()
 end
 
 function TestController:start()
-	print("Starting test controller")
-	local module = GetModule("OtherController")
-	print(module)
+	local queue = Queue.new()
+	for i = 1, 10 do
+		queue:push(i)
+	end
+
+	queue:setInterval(1, 2, function(item)
+		print(`Processing item: {item}`)
+	end)
+
+	queue:startProcessing()
 end
 
 return TestController
