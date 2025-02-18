@@ -1,6 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local RX = require(ReplicatedStorage.Packages.RX)
 local Dispatcher = require(ReplicatedStorage.Packages.Dispatcher)
 
 local TestService = {}

@@ -17,7 +17,7 @@ local function loadModule(module, Data)
 		task.spawn(function()
 			local success, err = pcall(function()
 				local required = require(module).new({
-					data = Data,
+					-- data = Data,
 				})
 
 				if required.initialize then
@@ -35,7 +35,7 @@ local function loadModule(module, Data)
 		end)
 	else
 		local required = require(module).new({
-			data = Data,
+			-- data = Data,
 		})
 
 		if required.initialize then
@@ -48,7 +48,9 @@ local function loadModule(module, Data)
 end
 
 Promise.new(function(resolve, reject)
-	local Data = Data.new()
+	-- local Data = Data.new()
+
+	Data:initialize()
 
 	for _, module in script:GetChildren() do
 		loadModule(module, Data)
