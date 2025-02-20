@@ -32,7 +32,7 @@ function Queue.new()
 	self._enqueue = {}
 	self._processing = false
 	self._interval = 1 -- Default to 1 second
-	self._batchSize = 5 -- Default batch size
+	self._batchSize = 1 -- Default batch size
 	self._callback = nil
 
 	return self
