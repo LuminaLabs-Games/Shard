@@ -179,3 +179,5 @@ function LinearSpring.step<T>(self: LinearSpring<T>, dt: number)
 
 	return self.typedat.fromIntermediate(self.p)
 end
+
+return LinearSpring

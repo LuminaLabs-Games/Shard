@@ -1,5 +1,7 @@
 local RotationSpring = {} 
 
+local CONSTANTS = require(script.Parent.Parent.Constants)
+
 type RotationSpring = typeof(setmetatable({} :: {
 	d: number,
 	f: number,
@@ -45,7 +47,7 @@ local function areRotationsClose(c0: CFrame, c1: CFrame)
 	local ry = dot(c0.YVector, c1.YVector)
 	local rz = dot(c0.ZVector, c1.ZVector)
 	local trace = rx + ry + rz
-	return trace > 1 + 2*cos(SLEEP_ROTATION_DIFF)
+	return trace > 1 + 2*math.cos(CONSTANTS.SLEEP_ROTATION_DIFF)
 end
 
 local function angleDiff(c0: CFrame, c1: CFrame)
@@ -53,13 +55,13 @@ local function angleDiff(c0: CFrame, c1: CFrame)
 	local y = dot(c0.YVector, c1.YVector)
 	local z = dot(c0.ZVector, c1.ZVector)
 	local w = x + y + z - 1
-	return atan2(sqrt(max(0, 1 - w*w*0.25)), w*0.5)
+	return math.atan2(math.sqrt(math.max(0, 1 - w*w*0.25)), w*0.5)
 end
 
 -- gives approx. 21% accuracy improvement over CFrame.fromAxisAngle near poles
 local function fromAxisAngle(axis: Vector3, angle: number)
-	local c = cos(angle)
-	local s = sin(angle)
+	local c = math.cos(angle)
+	local s = math.sin(angle)
 	local x, y, z = axis.X, axis.Y, axis.Z
 
 	local mxy = x*y*(1 - c)
@@ -94,19 +96,19 @@ end
 
 function RotationSpring.canSleep(self: RotationSpring)
 	local sleepP = areRotationsClose(self.p, self.g)
-	local sleepV = self.v.Magnitude < SLEEP_ROTATION_VELOCITY
+	local sleepV = self.v.Magnitude < CONSTANTS.SLEEP_ROTATION_VELOCITY
 	return sleepP and sleepV
 end
 
 function RotationSpring.step(self: RotationSpring, dt: number): CFrame
 	local d = self.d
-	local f = self.f*(2*pi)
+	local f = self.f*(2*math.pi)
 	local g = self.g
 	local p0 = self.p
 	local v0 = self.v
 
 	local offset = axisAngleDiff(p0, g)
-	local decay = exp(-d*f*dt)
+	local decay = math.exp(-d*f*dt)
 
 	local pt: CFrame
 	local vt: Vector3
@@ -116,10 +118,10 @@ function RotationSpring.step(self: RotationSpring, dt: number): CFrame
 		vt = (v0*(1 - dt*f) - offset*(dt*f*f))*decay
 
 	elseif d < 1 then -- underdamped
-		local c = sqrt(1 - d*d)
+		local c = math.sqrt(1 - d*d)
 
-		local i = cos(dt*f*c)
-		local j = sin(dt*f*c)
+		local i = math.cos(dt*f*c)
+		local j = math.sin(dt*f*c)
 
 		local y = j/(f*c)
 		local z = j/c
@@ -128,7 +130,7 @@ function RotationSpring.step(self: RotationSpring, dt: number): CFrame
 		vt = (v0*(i - z*d) - offset*(z*f))*decay
 
 	else -- overdamped
-		local c = sqrt(d*d - 1)
+		local c = math.sqrt(d*d - 1)
 
 		local r1 = -f*(d + c)
 		local r2 = -f*(d - c)
@@ -136,8 +138,8 @@ function RotationSpring.step(self: RotationSpring, dt: number): CFrame
 		local co2 = (v0 - offset*r1)/(2*f*c)
 		local co1 = offset - co2
 
-		local e1 = co1*exp(r1*dt)
-		local e2 = co2*exp(r2*dt)
+		local e1 = co1*math.exp(r1*dt)
+		local e2 = co2*math.exp(r2*dt)
 
 		pt = rotateAxis(e1 + e2, g)
 		vt = e1*r1 + e2*r2
@@ -149,3 +151,4 @@ function RotationSpring.step(self: RotationSpring, dt: number): CFrame
 	return pt
 end
 
+return RotationSpring

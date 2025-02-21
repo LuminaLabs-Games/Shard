@@ -1,6 +1,11 @@
 local CFrameSpring = {}
 CFrameSpring.__index = CFrameSpring
 
+local LinearSpring = require(script.Parent.Linear)
+local RotationSpring = require(script.Parent.Rotation)
+local Vector3Type = require(script.Parent.Parent.Types.Vector3Type)
+
+
 function CFrameSpring.new(
 	dampingRatio: number,
 	frequency: number,
@@ -11,7 +16,7 @@ function CFrameSpring.new(
 	return setmetatable(
 		{
 			rawGoal = valueGoal,
-			_position = LinearSpring.new(dampingRatio, frequency, valueCurrent.Position, valueGoal.Position, typeMetadata_Vector3),
+			_position = LinearSpring.new(dampingRatio, frequency, valueCurrent.Position, valueGoal.Position, Vector3Type),
 			_rotation = RotationSpring.new(dampingRatio, frequency, valueCurrent.Rotation, valueGoal.Rotation)
 		},
 		CFrameSpring
@@ -43,3 +48,5 @@ function CFrameSpring:step(dt): CFrame
 	local r: CFrame = self._rotation:step(dt)
 	return r + p
 end
+
+return CFrameSpring

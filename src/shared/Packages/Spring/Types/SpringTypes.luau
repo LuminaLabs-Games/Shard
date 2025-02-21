@@ -1,3 +1,9 @@
+local LinearSpring = require(script.Parent.Parent.Springs.Linear)
+local CFrameSpring = require(script.Parent.Parent.Springs.CFrame)
+local ColorConversions = require(script.Parent.Parent.Utils.ColorConversions)
+local Vector3Type = require(script.Parent.Vector3Type)
+
+
 return {
 	boolean = {
 		springType = LinearSpring.new,
@@ -43,7 +49,7 @@ return {
 		end,
 
 		fromIntermediate = function(value: {number})
-			return UDim.new(value[1], round(value[2]))
+			return UDim.new(value[1], math.round(value[2]))
 		end,
 	},
 
@@ -57,7 +63,7 @@ return {
 		end,
 
 		fromIntermediate = function(value: {number})
-			return UDim2.new(value[1], round(value[2]), value[3], round(value[4]))
+			return UDim2.new(value[1], math.round(value[2]), value[3], math.round(value[4]))
 		end,
 	},
 
@@ -73,12 +79,12 @@ return {
 		end,
 	},
 
-	Vector3 = typeMetadata_Vector3,
+	Vector3 = Vector3Type,
 
 	Color3 = {
 		springType = LinearSpring.new,
-		toIntermediate = rgbToLuv,
-		fromIntermediate = luvToRgb,
+		toIntermediate = ColorConversions.rgbToLuv,
+		fromIntermediate = ColorConversions.luvToRgb,
 	},
 
 	-- Only interpolates start and end keypoints
@@ -88,8 +94,8 @@ return {
 		toIntermediate = function(value)
 			local keypoints = value.Keypoints
 
-			local luv0 = rgbToLuv(keypoints[1].Value)
-			local luv1 = rgbToLuv(keypoints[#keypoints].Value)
+			local luv0 = ColorConversions.rgbToLuv(keypoints[1].Value)
+			local luv1 = ColorConversions.rgbToLuv(keypoints[#keypoints].Value)
 
 			return {
 				luv0[1], luv0[2], luv0[3],
@@ -99,8 +105,8 @@ return {
 
 		fromIntermediate = function(value: {})
 			return ColorSequence.new(
-				luvToRgb{value[1], value[2], value[3]},
-				luvToRgb{value[4], value[5], value[6]}
+				ColorConversions.luvToRgb{value[1], value[2], value[3]},
+				ColorConversions.luvToRgb{value[4], value[5], value[6]}
 			)
 		end,
 	},
@@ -109,5 +115,6 @@ return {
 		springType = CFrameSpring.new,
 		toIntermediate = error, -- custom (CFrameSpring)
 		fromIntermediate = error, -- custom (CFrameSpring)
-	}
+	},
+
 }
