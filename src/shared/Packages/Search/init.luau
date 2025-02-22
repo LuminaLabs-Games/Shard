@@ -16,3 +16,7 @@ local function BinarySearch(array: { any }, value: any)
 
 	return nil
 end
+
+return {
+	BinarySearch = BinarySearch,
+}
