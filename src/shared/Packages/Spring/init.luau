@@ -4,6 +4,7 @@ local Trove = require(script.Parent.Trove)
 local Spring = {}
 Spring.__index = Spring
 
+local SpringTypes = require(script.Types.SpringTypes) 
 
 
 local function udim2_add(a, b)
@@ -22,7 +23,11 @@ function Spring.new(instance, dampingRatio, frequency)
 	local self = setmetatable({}, Spring)
 
 	self.Instance = instance
-	self.SpringType = typeMetadata[typeof(instance)]
+	self.SpringType = SpringTypes[typeof(instance)]
+	if not self.SpringType then
+		error("Spring type not supported for " .. typeof(instance))
+	end
+
 	self.DampingRatio = dampingRatio
 	self.Frequency = frequency
 
