@@ -1,0 +1,28 @@
+local BindableFunction = {}
+BindableFunction.__index = BindableFunction
+
+function BindableFunction.new(bindableFunction: BindableFunction)
+	local self = setmetatable({}, BindableFunction)
+
+	self._bindableFunction = bindableFunction
+
+	return self
+end
+
+function BindableFunction:Invoke(...)
+	return self._bindableFunction:Invoke(...)
+end
+
+function BindableFunction:Connect(callback: (...any) -> any)
+	self._bindableFunction.OnInvoke = callback
+end
+
+function BindableFunction:OnInvoke(callback: (...any) -> any)
+	self._bindableFunction.OnInvoke = callback
+end
+
+function BindableFunction:Destroy()
+	self._bindableFunction:Destroy()
+end
+
+return BindableFunction
