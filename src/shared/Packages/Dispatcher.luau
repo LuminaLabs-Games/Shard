@@ -2,6 +2,8 @@ export type Dispatcher = {
 	new: () -> Dispatcher,
 	Subscribe: (self: Dispatcher, event: string, callback: any, callbackName: string?) -> nil,
 	subscribe: (self: Dispatcher, event: string, callback: any, callbackName: string?) -> nil,
+	listen: (self: Dispatcher, event: string, callback: any, callbackName: string?) -> nil,
+	Listen: (self: Dispatcher, event: string, callback: any, callbackName: string?) -> nil,
 	SubscribeOnce: (self: Dispatcher, event: string, callback: any, callbackName: string?) -> nil,
 	Unsubscribe: (self: Dispatcher, event: string, callbackName: string?) -> nil,
 	unsubscribe: (self: Dispatcher, event: string, callbackName: string?) -> nil,
@@ -49,6 +51,14 @@ function Dispatcher:subscribe(event: string, callback: any, callbackName: string
 	return self:Subscribe(event, callback, callbackName)
 end
 
+function Dispatcher:listen(event: string, callback: any, callbackName: string?)
+	return self:Subscribe(event, callback, callbackName)
+end
+
+function Dispatcher:Listen(event: string, callback: any, callbackName: string?)
+	return self:Subscribe(event, callback, callbackName)
+end
+
 function Dispatcher:SubscribeOnce(event: string, callback: any, callbackName: string?)
 	local function oneTimeCallback(...)
 		self:Unsubscribe(event, callbackName)
@@ -87,14 +97,19 @@ function Dispatcher:Publish(event: string, ...: any)
 	local results = {}
 
 	for _, callback in eventListeners do
-		local result = callback(...)
-		if result then
-			table.insert(results, result)
+		local result = table.pack(callback(...))
+		for i = 1, result.n do
+			table.insert(results, result[i])
 		end
 	end
 
-	return unpack(results)
+	if #results > 0 then
+		return unpack(results)
+	end
+
+	return
 end
+
 
 function Dispatcher:PublishDeferred(event: string, ...: any)
 	local args = { ... }

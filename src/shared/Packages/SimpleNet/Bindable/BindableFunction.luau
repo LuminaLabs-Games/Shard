@@ -13,6 +13,13 @@ function BindableFunction:Invoke(...)
 	return self._bindableFunction:Invoke(...)
 end
 
+function BindableFunction:InvokeDelayed(delay: number, ...)
+	local args = { ... }
+	task.delay(delay, function()
+		self._bindableFunction:Invoke(unpack(args))
+	end)
+end
+
 function BindableFunction:Connect(callback: (...any) -> any)
 	self._bindableFunction.OnInvoke = callback
 end

@@ -17,6 +17,12 @@ function RemoteFunction:Connect(callback: (player: Player, args: any) -> ())
 	end
 end
 
+function RemoteFunction:OnServerInvoke(callback: (player: Player, args: any) -> ())
+	self._remoteFunction.OnServerInvoke = function(player: Player, ...: any): ...any
+		return callback(player, ...)
+	end
+end
+
 function RemoteFunction:Destroy()
 	self._remoteFunction:Destroy()
 end

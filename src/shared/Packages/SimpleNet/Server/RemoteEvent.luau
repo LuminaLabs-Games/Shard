@@ -14,7 +14,15 @@ function RemoteEvent:Fire(player: Player, ...: any): ()
 	self._remoteEvent:FireClient(player, ...)
 end
 
+function RemoteEvent:FireClient(player: Player, ...: any): ()
+	self._remoteEvent:FireClient(player, ...)
+end
+
 function RemoteEvent:FireAll(...: any): ()
+	self._remoteEvent:FireAllClients(...)
+end
+
+function RemoteEvent:FireAllClients(...: any): ()
 	self._remoteEvent:FireAllClients(...)
 end
 
@@ -26,18 +34,18 @@ function RemoteEvent:FireFilter(filter: (player: Player) -> boolean, ...: any): 
 	end
 end
 
-function RemoteEvent:FireAllExcept(player: Player, ...: any): ()
-	for _, p in Players:GetPlayers() do
-		if p ~= player then
-			self._remoteEvent:FireClient(p, ...)
-		end
-	end
-end
-
 function RemoteEvent:FireAllExceptFilter(filter: (player: Player) -> boolean, ...: any): ()
 	for _, player in Players:GetPlayers() do
 		if not filter(player) then
 			self._remoteEvent:FireClient(player, ...)
+		end
+	end
+end
+
+function RemoteEvent:FireAllExcept(player: Player, ...: any): ()
+	for _, p in Players:GetPlayers() do
+		if p ~= player then
+			self._remoteEvent:FireClient(p, ...)
 		end
 	end
 end

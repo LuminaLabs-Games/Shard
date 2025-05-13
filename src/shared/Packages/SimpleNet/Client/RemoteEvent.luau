@@ -24,9 +24,9 @@ function RemoteEvent:FireDelayed(delay: number, ...)
 	end)
 end
 
-function RemoteEvent:Connect(callback: (player: Player, args: any) -> ())
-	self._remoteEvent.OnClientEvent:Connect(function(player: Player, ...)
-		callback(player, ...)
+function RemoteEvent:Connect(callback: (args: any) -> ())
+	self._remoteEvent.OnClientEvent:Connect(function(...)
+		callback(...)
 	end)
 end
 
