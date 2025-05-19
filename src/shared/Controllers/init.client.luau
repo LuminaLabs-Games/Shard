@@ -1,4 +1,4 @@
-while workspace:GetAttribute("ServerLoaded") ~= true do
+while workspace:GetAttribute("__ShardServerLoaded") ~= true do
 	print("Waiting for server to load...")
 	task.wait()
 end
