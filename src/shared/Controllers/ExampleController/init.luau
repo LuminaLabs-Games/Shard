@@ -1,22 +1,14 @@
-local ExampleController = {}
-ExampleController.__index = ExampleController
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-type self = {
-	new: () -> ExampleController,
-	initialize: () -> (),
-}
+local Shard = require(ReplicatedStorage.Packages.Shard)
+local ExampleController = Shard.new("ExampleController")
 
-export type ExampleController = typeof(setmetatable({} :: self, ExampleController))
-
-function ExampleController.new(): ExampleController
-	local self = setmetatable({} :: self, ExampleController)
-
-	return self
+function ExampleController:init()
+	print(`ExampleController initialized`)
 end
 
-function ExampleController:initialize()
-	
+function ExampleController:start()
+	print(`ExampleController started`)
 end
-
 
 return ExampleController
