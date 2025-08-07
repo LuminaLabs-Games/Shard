@@ -1,3 +1,4 @@
+local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local RunContext = RunService:IsServer() and "Server" or "Client"
@@ -17,6 +18,7 @@ Module._isInitializing = false -- Track if we're currently in the init phase
 -- Export the Log module for global access
 Module.log = Log
 Module.log.configure(Config.Logger)
+Module.Player = RunContext == "Client" and Players.LocalPlayer or nil
 
 function Module.new(name: string)
 	if RunContext == "Server" then

@@ -14,6 +14,7 @@ local Some = Shard.new("SomeService")
 		end,
 
 		start = function(self)
+			print(self)
 			print(Shard.getFrameworkStats())
 		end,
 	})
