@@ -1,10 +1,13 @@
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local RunContext = RunService:IsServer() and "Server" or "Client"
 local Config = require(script.Config)
 local SimpleNet = require(script.Parent.SimpleNet)
 local Log = require(script.Log)
+local Value = require(script.Parent.Value)
 
 local Module = {}
 Module._services = {}
@@ -18,7 +21,98 @@ Module._isInitializing = false -- Track if we're currently in the init phase
 -- Export the Log module for global access
 Module.log = Log
 Module.log.configure(Config.Logger)
-Module.Player = RunContext == "Client" and Players.LocalPlayer or nil
+
+Module.IsStudio = RunService:IsStudio()
+Module.IsServer = RunContext == "Server"
+Module.IsClient = RunContext == "Client"
+Module.Players = Players
+Module.GenerateGUID = function()
+	return HttpService:GenerateGUID(false)
+end
+Module.HandleProgressionEvent = function(options: {
+	player: Player,
+	progression01: string,
+	progression02: string?,
+	progression03: string?,
+})
+	if not options or not options.player or not options.progression01 or Module.IsClient then
+		return
+	end
+end
+
+if RunContext == "Client" then
+	local localPlayer = Players.LocalPlayer
+	local playerData = {}
+
+	playerData.is = function(player)
+		return localPlayer == player
+	end
+
+	playerData.observe = function(key, callback)
+		return playerData[key] and playerData[key]:observe(callback)
+	end
+
+	playerData.set = function(key, value)
+		if not key or value == nil then
+			return
+		end
+		if playerData[key] then
+			playerData[key]:set(value)
+		else
+			playerData[key] = Value(value)
+		end
+	end
+
+	playerData.get = function(key)
+		if not key then
+			return nil
+		end
+		return playerData[key] and playerData[key]:get() or nil
+	end
+
+	Module.Player = setmetatable({}, {
+		__index = function(self, key, value)
+			if playerData[key] ~= nil then
+				if typeof(playerData[key]) == "function" then
+					return playerData[key]
+				end
+				return playerData[key]:get()
+			end
+
+			local skipProperties = {}
+
+			if skipProperties[key] then
+				return nil
+			end
+
+			local success, result = pcall(function()
+				return localPlayer[key]
+			end)
+
+			if success and result ~= nil then
+				return result
+			end
+
+			return nil
+		end,
+		__newindex = function(self, key, value)
+			if typeof(value) == "function" then
+				playerData[key] = value
+				return
+			end
+
+			playerData[key] = Value(value)
+		end,
+		__tostring = function(self)
+			return tostring(localPlayer)
+		end,
+		__eq = function(self, other)
+			return localPlayer == other
+		end,
+	})
+else
+	Module.Player = nil
+end
 
 function Module.new(name: string)
 	if RunContext == "Server" then
@@ -50,7 +144,9 @@ function Module.new(name: string)
 		return controller
 	end
 
-	warn(`SOMETHING WENT HORRIBLY WRONG: Attempted to create a Shard in an unsupported context: {RunContext}`)
+	Module.log:error(
+		`SOMETHING WENT HORRIBLY WRONG: Attempted to create a Shard in an unsupported context: {RunContext}`
+	)
 	return nil
 end
 
@@ -64,11 +160,13 @@ function Module.get(name: string)
 					return service._module
 				else
 					-- Service exists but not yet initialized - this means circular dependency or wrong order
-					warn(`Service '{name}' is not yet initialized. Check dependency order or circular dependencies.`)
+					Module.log:warn(
+						`Service '{name}' is not yet initialized. Check dependency order or circular dependencies.`
+					)
 					return nil
 				end
 			else
-				warn(`Service '{name}' not found in Shard._services`)
+				Module.log:warn(`Service '{name}' not found in Shard._services`)
 				return nil
 			end
 		end
@@ -93,11 +191,13 @@ function Module.get(name: string)
 					return controller._module
 				else
 					-- Controller exists but not yet initialized - this means circular dependency or wrong order
-					warn(`Controller '{name}' is not yet initialized. Check dependency order or circular dependencies.`)
+					Module.log:warn(
+						`Controller '{name}' is not yet initialized. Check dependency order or circular dependencies.`
+					)
 					return nil
 				end
 			else
-				warn(`Controller '{name}' not found in Shard._controllers`)
+				Module.log:warn(`Controller '{name}' not found in Shard._controllers`)
 				return nil
 			end
 		end
@@ -110,12 +210,12 @@ function Module.get(name: string)
 		if Module._controllers[name] then
 			return Module._controllers[name]._module
 		else
-			warn(`Controller '{name}' not found in Shard._controllers`)
+			Module.log:warn(`Controller '{name}' not found in Shard._controllers`)
 			return nil
 		end
 	end
 
-	warn(`SOMETHING WENT HORRIBLY WRONG: Attempted to get a Shard in an unsupported context: {RunContext}`)
+	Module.log:error(`SOMETHING WENT HORRIBLY WRONG: Attempted to get a Shard in an unsupported context: {RunContext}`)
 	return nil
 end
 
@@ -124,7 +224,7 @@ function Module.init()
 		Module._isInitializing = true -- Set flag to indicate we're in init phase
 		local bootTimes = {}
 		if not Module._services then
-			warn("No services found to initialize.")
+			Module.log:warn("No services found to initialize.")
 			Module._isInitializing = false
 			return
 		end
@@ -145,7 +245,7 @@ function Module.init()
 					if Module._services[depName] then
 						addServiceAndDependencies(depName, visited)
 					else
-						warn(`Service '{serviceName}' depends on '{depName}' which doesn't exist`)
+						Module.log:warn(`Service '{serviceName}' depends on '{depName}' which doesn't exist`)
 					end
 				end
 				table.insert(sortedServices, serviceName)
@@ -167,13 +267,13 @@ function Module.init()
 				if Config.VERBOSE_LOGGING then
 					local elapsed = tick() - start
 					bootTimes[serviceName] = tostring(elapsed)
-					print(`Service '{serviceName}' initialized!`)
+					Module.log:info(`Service '{serviceName}' initialized!`)
 				end
 			end
 		end
 
 		if Config.VERBOSE_LOGGING then
-			print("All services initialized:", bootTimes)
+			Module.log:info("All services initialized:", bootTimes)
 		end
 		Module._isInitializing = false -- Clear flag when done
 		Module._serverInit = true
@@ -181,7 +281,7 @@ function Module.init()
 		Module._isInitializing = true -- Set flag to indicate we're in init phase
 		local bootTimes = {}
 		if not Module._controllers then
-			warn("No controllers found to initialize.")
+			Module.log:warn("No controllers found to initialize.")
 			Module._isInitializing = false
 			return
 		end
@@ -202,7 +302,7 @@ function Module.init()
 					if Module._controllers[depName] then
 						addControllerAndDependencies(depName, visited)
 					else
-						warn(`Controller '{controllerName}' depends on '{depName}' which doesn't exist`)
+						Module.log:warn(`Controller '{controllerName}' depends on '{depName}' which doesn't exist`)
 					end
 				end
 				table.insert(sortedControllers, controllerName)
@@ -224,13 +324,13 @@ function Module.init()
 				if Config.VERBOSE_LOGGING then
 					local elapsed = tick() - start
 					bootTimes[controllerName] = tostring(elapsed)
-					print(`Controller '{controllerName}' initialized!`)
+					Module.log:info(`Controller '{controllerName}' initialized!`)
 				end
 			end
 		end
 
 		if Config.VERBOSE_LOGGING then
-			print("All controllers initialized:", bootTimes)
+			Module.log:info("All controllers initialized:", bootTimes)
 		end
 
 		Module._isInitializing = false -- Clear flag when done
@@ -242,7 +342,7 @@ function Module.start()
 	if RunContext == "Server" then
 		local bootTimes = {}
 		if not Module._services then
-			warn("No services found to start.")
+			Module.log:warn("No services found to start.")
 			return
 		end
 		for name, service in Module._services do
@@ -253,18 +353,18 @@ function Module.start()
 				if Config.VERBOSE_LOGGING then
 					local elapsed = tick() - start
 					bootTimes[name] = tostring(elapsed)
-					print(`Service '{name}' started!`)
+					Module.log:info(`Service '{name}' started!`)
 				end
 			end
 		end
 		if Config.VERBOSE_LOGGING then
-			print("All services started:", bootTimes)
+			Module.log:info("All services started:", bootTimes)
 		end
 		Module._serverStart = true
 	elseif RunContext == "Client" then
 		local bootTimes = {}
 		if not Module._controllers then
-			warn("No controllers found to start.")
+			Module.log:warn("No controllers found to start.")
 			return
 		end
 
@@ -276,13 +376,13 @@ function Module.start()
 				if Config.VERBOSE_LOGGING then
 					local elapsed = tick() - start
 					bootTimes[name] = tostring(elapsed)
-					print(`Controller '{name}' started!`)
+					Module.log:info(`Controller '{name}' started!`)
 				end
 			end
 		end
 
 		if Config.VERBOSE_LOGGING then
-			print("All controllers started:", bootTimes)
+			Module.log:info("All controllers started:", bootTimes)
 		end
 
 		Module._clientStart = true
@@ -341,7 +441,7 @@ function Module.getAllServices()
 		end
 		return services
 	end
-	warn("getAllServices can only be called on the server")
+	Module.log:warn("getAllServices can only be called on the server")
 	return {}
 end
 
@@ -357,7 +457,7 @@ function Module.getAllControllers()
 		end
 		return controllers
 	end
-	warn("getAllControllers can only be called on the client")
+	Module.log:warn("getAllControllers can only be called on the client")
 	return {}
 end
 
@@ -428,7 +528,7 @@ function Module.waitFor(name: string, timeout: number?)
 
 	while not Module.exists(name) do
 		if tick() - startTime > timeout then
-			warn(`Timed out waiting for {name}`)
+			Module.log:warn(`Timed out waiting for {name}`)
 			return nil
 		end
 		task.wait(0.1)

@@ -119,7 +119,7 @@ function Dispatcher:PublishDeferred(event: string, ...: any)
 end
 
 function Dispatcher:publish(event: string, ...: any)
-	self:Publish(event, ...)
+	return self:Publish(event, ...)
 end
 
 function Dispatcher:PublishNoYield(event: string, ...: any)

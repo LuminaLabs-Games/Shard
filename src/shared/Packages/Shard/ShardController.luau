@@ -319,9 +319,11 @@ end
     Gets a configuration value
     @param key -- The configuration key
     @param default -- Default value if key doesn't exist
-    @return any -- The configuration value
+    @return any -- The configuration value or default
 ]=]
-function ShardController:getConfig(key: string, default: any?)
+function ShardController:getConfig(key: string?, default: any?)
+	if key == nil and default == nil then return self._config end
+
 	return if self._config[key] ~= nil then self._config[key] else default
 end
 

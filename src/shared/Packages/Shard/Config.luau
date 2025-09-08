@@ -6,9 +6,9 @@ return {
 	VERBOSE_LOGGING = RunService:IsStudio() and false,
 	Logger = {
 		level = RunService:IsStudio() and Log.Level.TRACE or Log.Level.ERROR,
-		includeTimestamp = false,
+		includeTimestamp = true,
 		includeLevel = true,
-		includeService = false,
+		includeService = true,
 		dateFormat = "%H:%M:%S",
 	},
 }

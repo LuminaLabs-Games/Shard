@@ -43,10 +43,10 @@ end
 function ShardService:withRemoteEvents(remotes: { string | { [string]: any } })
 	for _, remote in remotes do
 		if type(remote) == "string" then
-			self._remoteEvents[remote] = SimpleNet:remoteEvent(self.name .. "_" .. remote)
+			self._remoteEvents[remote] = SimpleNet:remoteEvent(remote)
 		elseif type(remote) == "table" then
 			for name, callback in remote do
-				self._remoteEvents[name] = SimpleNet:remoteEvent(self.name .. "_" .. name, callback)
+				self._remoteEvents[name] = SimpleNet:remoteEvent(name, callback)
 			end
 		end
 	end
@@ -61,10 +61,10 @@ end
 function ShardService:withRemoteFunctions(remotes: { string | { [string]: any } })
 	for _, remote in remotes do
 		if type(remote) == "string" then
-			self._remoteFunctions[remote] = SimpleNet:remoteFunction(self.name .. "_" .. remote)
+			self._remoteFunctions[remote] = SimpleNet:remoteFunction(remote)
 		elseif type(remote) == "table" then
 			for name, callback in remote do
-				self._remoteFunctions[name] = SimpleNet:remoteFunction(self.name .. "_" .. name, callback)
+				self._remoteFunctions[name] = SimpleNet:remoteFunction(name, callback)
 			end
 		end
 	end
@@ -319,7 +319,10 @@ end
     @param default -- Default value if key doesn't exist
     @return any -- The configuration value
 ]=]
-function ShardService:getConfig(key: string, default: any?)
+function ShardService:getConfig(key: string?, default: any?)
+	if key == nil and default == nil then
+		return self._config
+	end
 	return if self._config[key] ~= nil then self._config[key] else default
 end
 

@@ -1,5 +1,3 @@
---!nocheck
-
 --[[
 MAD STUDIO
 
@@ -164,7 +162,7 @@ function Remote.New(name: string, is_unreliable: boolean?): RemoteEvent
 			end
 
 			self.RemoteEvent = remote
-			connections = nil
+			connections = nil :: any
 			
 		end
 		

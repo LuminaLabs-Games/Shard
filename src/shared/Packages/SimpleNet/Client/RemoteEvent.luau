@@ -25,7 +25,7 @@ function RemoteEvent:FireDelayed(delay: number, ...)
 end
 
 function RemoteEvent:Connect(callback: (args: any) -> ())
-	self._remoteEvent.OnClientEvent:Connect(function(...)
+	return self._remoteEvent.OnClientEvent:Connect(function(...)
 		callback(...)
 	end)
 end
