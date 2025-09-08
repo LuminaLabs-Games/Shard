@@ -49,7 +49,15 @@ if RunContext == "Client" then
 	end
 
 	playerData.observe = function(key, callback)
-		return playerData[key] and playerData[key]:observe(callback)
+		if not key or not callback then
+			return nil
+		end
+
+		if not playerData[key] then -- Allow observing before the key is initialized
+			playerData[key] = Value(nil)
+		end
+
+		return playerData[key]:observe(callback)
 	end
 
 	playerData.set = function(key, value)
