@@ -42,8 +42,20 @@ end
 
 if RunContext == "Client" then
 	local localPlayer = Players.LocalPlayer
-	local playerData = {}
+	local playerData = {
+		_values = {}, -- Store Value objects
+		_methods = {}, -- Store custom methods
+	}
 
+	-- Helper to get or create a reactive Value
+	local function getOrCreateValue(key)
+		if not playerData._values[key] then
+			playerData._values[key] = Value(nil)
+		end
+		return playerData._values[key]
+	end
+
+	-- Core player methods
 	playerData.is = function(player)
 		return localPlayer == player
 	end
@@ -52,22 +64,18 @@ if RunContext == "Client" then
 		if not key or not callback then
 			return nil
 		end
-
-		if not playerData[key] then -- Allow observing before the key is initialized
-			playerData[key] = Value(nil)
-		end
-
-		return playerData[key]:observe(callback)
+		return getOrCreateValue(key):observe(callback)
 	end
 
 	playerData.set = function(key, value)
-		if not key or value == nil then
+		if not key then
 			return
 		end
-		if playerData[key] then
-			playerData[key]:set(value)
+
+		if typeof(value) == "function" then
+			playerData._methods[key] = value
 		else
-			playerData[key] = Value(value)
+			getOrCreateValue(key):set(value)
 		end
 	end
 
@@ -75,24 +83,35 @@ if RunContext == "Client" then
 		if not key then
 			return nil
 		end
-		return playerData[key] and playerData[key]:get() or nil
+
+		-- Check methods first
+		if playerData._methods[key] then
+			return playerData._methods[key]
+		end
+
+		-- Then check values
+		local value = playerData._values[key]
+		return value and value:get() or nil
 	end
 
 	Module.Player = setmetatable({}, {
-		__index = function(self, key, value)
-			if playerData[key] ~= nil then
-				if typeof(playerData[key]) == "function" then
-					return playerData[key]
-				end
-				return playerData[key]:get()
+		__index = function(self, key)
+			-- Core methods
+			if key == "observe" or key == "set" or key == "get" or key == "is" then
+				return playerData[key]
 			end
 
-			local skipProperties = {}
-
-			if skipProperties[key] then
-				return nil
+			-- Custom methods
+			if playerData._methods[key] then
+				return playerData._methods[key]
 			end
 
+			-- Stored reactive values
+			if playerData._values[key] then
+				return playerData._values[key]:get()
+			end
+
+			-- Fallback to localPlayer properties
 			local success, result = pcall(function()
 				return localPlayer[key]
 			end)
@@ -103,23 +122,79 @@ if RunContext == "Client" then
 
 			return nil
 		end,
-		__newindex = function(self, key, value)
-			if typeof(value) == "function" then
-				playerData[key] = value
-				return
-			end
 
-			playerData[key] = Value(value)
+		__newindex = function(self, key, value)
+			playerData.set(key, value)
 		end,
+
 		__tostring = function(self)
 			return tostring(localPlayer)
 		end,
+
 		__eq = function(self, other)
 			return localPlayer == other
 		end,
 	})
-else
+else -- Server side
 	Module.Player = nil
+
+	local serverData = {
+		_values = {}, -- Regular values (not reactive)
+		_methods = {}, -- Custom methods
+	}
+
+	serverData.get = function(key)
+		if not key then
+			return nil
+		end
+
+		if serverData._methods[key] then
+			return serverData._methods[key]
+		end
+
+		return serverData._values[key]
+	end
+
+	serverData.set = function(key, value)
+		if not key then
+			return
+		end
+
+		if typeof(value) == "function" then
+			serverData._methods[key] = value
+		else
+			serverData._values[key] = value
+		end
+	end
+
+	Module.Server = setmetatable({}, {
+		__index = function(self, key)
+			if key == "get" or key == "set" or key == "observe" then
+				return serverData[key]
+			end
+
+			if serverData._methods[key] then
+				return serverData._methods[key]
+			end
+
+			if serverData._values[key] ~= nil then
+				return serverData._values[key]
+			end
+
+			-- DO NOT proxy to game - that's confusing AF
+			-- If you need game services, access them directly
+
+			return nil
+		end,
+
+		__newindex = function(self, key, value)
+			serverData.set(key, value)
+		end,
+
+		__tostring = function(self)
+			return "ShardServer"
+		end,
+	})
 end
 
 function Module.new(name: string)
