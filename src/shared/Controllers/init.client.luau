@@ -4,7 +4,7 @@ until workspace:GetAttribute("ShardServerStarted") ~= nil and workspace:GetAttri
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local ReplicaClient = require(ReplicatedStorage.Libraries.Replica.ReplicaClient)
+local ReplicaClient = require(ReplicatedStorage.Packages.ReplicaClient)
 local Promise = require(ReplicatedStorage.Packages.Promise)
 local Shard = require(ReplicatedStorage.Packages.Shard)
 

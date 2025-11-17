@@ -1,5 +1,5 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ReplicaServer = require(ReplicatedStorage.Libraries.Replica.ReplicaServer)
+local ReplicaServer = require(ReplicatedStorage.Packages.ReplicaServer)
 
 local Types = {}
 

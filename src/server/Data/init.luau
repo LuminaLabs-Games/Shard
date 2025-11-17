@@ -2,15 +2,15 @@ local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local ServerScriptService = game:GetService("ServerScriptService")
 
-local Libraries = ReplicatedStorage.Libraries
 local Packages = ReplicatedStorage.Packages
 
 local PlayerProfile = require(script.Components.PlayerProfile)
-local ProfileStore = require(Libraries.ProfileStore)
-local Replica = require(Libraries.Replica.ReplicaServer)
+local ProfileStore = require(ServerScriptService.ServerPackages.ProfileStore)
+local Replica = require(Packages.ReplicaServer)
 
-local observePlayer = require(Packages.Observers.observePlayer)
+local observePlayer = require(Packages.Observers).observePlayer
 local DevProducts = require(script.Components.DevProductsHandler)
 local Settings = require(script.Components.Settings)
 local Types = require(script.Components.Types)
