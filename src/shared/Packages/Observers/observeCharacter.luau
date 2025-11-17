@@ -2,6 +2,8 @@
 
 local observePlayer = require(script.Parent.observePlayer)
 
+type Callback = (player: Player, character: Model) -> (() -> ())?
+
 --[=[
 	@within Observers
 
@@ -17,9 +19,22 @@ local observePlayer = require(script.Parent.observePlayer)
 		end
 	end)
 	```
+
+	An optional `allowedPlayers` array can be provided. Only characters
+	belonging to players in the array are observed.
+
+	```lua
+	observeCharacter(function(player, character)
+		-- ...
+	end, { somePlayer, anotherPlayer })
+	```
 ]=]
-local function observeCharacter(callback: (player: Player, character: Model) -> (() -> ())?): () -> ()
+local function observeCharacter(callback: Callback, allowedPlayers: { Player }?): () -> ()
 	return observePlayer(function(player)
+		if allowedPlayers ~= nil and not table.find(allowedPlayers, player) then
+			return nil
+		end
+
 		local cleanupFn: (() -> ())? = nil
 
 		local characterAddedConn: RBXScriptConnection
@@ -29,7 +44,7 @@ local function observeCharacter(callback: (player: Player, character: Model) -> 
 
 			-- Call the callback:
 			task.defer(function()
-				local cleanup = callback(player, character)
+				local cleanup = (callback :: any)(player, character)
 				-- If a cleanup function is given, save it for later:
 				if typeof(cleanup) == "function" then
 					if characterAddedConn.Connected and character.Parent then

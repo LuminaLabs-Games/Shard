@@ -30,6 +30,12 @@ function RemoteEvent:Connect(callback: (args: any) -> ())
 	end)
 end
 
+function RemoteEvent:Once(callback: (args: any) -> ())
+	self._remoteEvent.OnClientEvent:Once(function(...)
+		callback(...)
+	end)
+end
+
 function RemoteEvent:Destroy()
 	self._remoteEvent:Destroy()
 end

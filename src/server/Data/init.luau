@@ -23,12 +23,15 @@ local DataSingleton = setmetatable({}, Data)
 function DataSingleton:initialize()
 	self._playerToken = Replica.Token("PlayerData")
 	self._playerStore = ProfileStore.New("PlayerStore", Settings.TEMPLATE)
+	self._suffix = self:GetSuffix()
 	if RunService:IsStudio() and Settings.DEBUG_MOCK then
 		print("[ProfileStore]: Using mock profile store")
 		self._playerStore = self._playerStore.Mock
 	end
 
 	self._profiles = {} :: { [Player]: typeof(self._playerStore:StartSessionAsync()) }
+	self._profilesByUserId = {} :: { [number]: typeof(self._playerStore:StartSessionAsync()) }
+
 	self:_observePlayers()
 
 	MarketplaceService.ProcessReceipt = function(receiptInfo)
@@ -44,9 +47,38 @@ function DataSingleton:GetProfileAsync(player: Player): Types.PlayerProfile?
 end
 
 function DataSingleton:_playerAdded(player: Player)
+	local existingProfile = self._profilesByUserId[player.UserId]
+	if existingProfile then
+		local oldProfile = existingProfile:GetProfile()
+		local oldReplica = existingProfile:GetReplica()
+
+		self._profilesByUserId[player.UserId] = nil
+		for p, prof in self._profiles do
+			if prof == existingProfile then
+				self._profiles[p] = nil
+				break
+			end
+		end
+
+		if oldProfile and oldProfile:IsActive() then
+			if oldReplica then
+				oldReplica:Destroy()
+			end
+			local sessionEnded = false
+			local connection = oldProfile.OnSessionEnd:Connect(function()
+				sessionEnded = true
+			end)
+			oldProfile:EndSession()
+			while not sessionEnded do
+				task.wait()
+			end
+			connection:Disconnect()
+		end
+	end
+
 	local profile = nil
 	while player.Parent == Players and not ProfileStore.IsClosing do
-		profile = self._playerStore:StartSessionAsync(`{player.UserId}{Settings.SUFFIX}`, {
+		profile = self._playerStore:StartSessionAsync(`{player.UserId}{self._suffix}`, {
 			Cancel = function()
 				return player.Parent ~= Players
 			end,
@@ -66,6 +98,8 @@ function DataSingleton:_playerAdded(player: Player)
 
 	profile.OnSessionEnd:Connect(function()
 		self._profiles[player] = nil
+		self._profilesByUserId[player.UserId] = nil
+
 		player:Kick(Settings.SESSION_END_MESSAGE)
 	end)
 
@@ -81,6 +115,7 @@ function DataSingleton:_playerAdded(player: Player)
 	replica:Replicate()
 
 	self._profiles[player] = PlayerProfile.new(player, profile, replica)
+	self._profilesByUserId[player.UserId] = self._profiles[player]
 end
 
 function DataSingleton:GetPlayerStore()
@@ -92,25 +127,48 @@ function DataSingleton:GetProfileStore()
 end
 
 function DataSingleton:GetPlayerKey(player: Player): string
-	return `{player.UserId}{Settings.SUFFIX}`
+	return `{player.UserId}{self._suffix}`
 end
 
 function DataSingleton:GetKeyFromUserId(userId: number): string
-	return `{userId}{Settings.SUFFIX}`
+	return `{userId}{self._suffix}`
+end
+
+function DataSingleton:GetSuffix()
+	local suffix
+	if RunService:IsStudio() then
+		suffix = Settings.DEVELOPMENT_SUFFIX
+	else
+		if game.PlaceId == Settings.PRODUCTION_PLACE_ID then
+			suffix = Settings.PRODUCTION_SUFFIX
+		else
+			suffix = Settings.DEVELOPMENT_SUFFIX
+		end
+	end
+	return suffix
 end
 
 function DataSingleton:_observePlayers()
 	observePlayer(function(player)
 		self:_playerAdded(player)
 		return function()
-			local profile = self._profiles[player] and self._profiles[player]:GetProfile()
-			if profile then
+			local playerProfile = self._profiles[player]
+			local profile = playerProfile and playerProfile:GetProfile()
+			local replica = playerProfile and playerProfile:GetReplica()
+			if profile and replica then
 				-- We do RunService.Heartbeat:Wait() to allow BindToClose to fire, when a shutdown happens Roblox kicks all players then does BindsToClose
 				-- This correctly identifies the shutdown reason in the .OnLastSave method of ProfileStore.
 				-- (I.e. you want to detect if a dev/owner shutdown the server in order to save their boosts or something like that)
 				RunService.Heartbeat:Wait()
+
 				if profile:IsActive() then
+					replica:Destroy()
 					profile:EndSession()
+
+					local userId = playerProfile:GetUserId()
+					if userId and self._profilesByUserId[userId] then
+						self._profilesByUserId[userId] = nil
+					end
 				end
 			end
 		end

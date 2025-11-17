@@ -43,7 +43,28 @@ end
 ```]]
 
 -- INTERNAL API
-function PlayerProfile:Get(keyToGet: string, tableToSearch: {})
+
+function PlayerProfile:Get(path: string | { string }): any
+	if not self:IsActive() then
+		return
+	end
+
+	if typeof(path) == "string" then
+		return self:_getRecursive(path)
+	elseif typeof(path) == "table" then
+		local currentTable = self._profile.Data
+		for _, key in path do
+			if currentTable[key] == nil then
+				return nil
+			end
+			currentTable = currentTable[key]
+		end
+		return currentTable
+	end
+	return nil
+end
+
+function PlayerProfile:_getRecursive(keyToGet: string, tableToSearch: {}): any
 	tableToSearch = tableToSearch or self._profile.Data
 	for key, value in tableToSearch do
 		if key == keyToGet then
@@ -61,7 +82,22 @@ function PlayerProfile:Get(keyToGet: string, tableToSearch: {})
 	return nil
 end
 
-function PlayerProfile:Set(keyToSet: string, valueToSet: any, tableToSearch: {}, path: { string })
+function PlayerProfile:Set(path: string | { string }, value: any): any
+	if not self:IsActive() then
+		return nil
+	end
+
+	if typeof(path) == "string" then
+		return if self:_setRecursive(path, value) then value else nil
+	elseif typeof(path) == "table" then
+		self._replica:Set(path, value)
+		return value
+	end
+
+	return nil
+end
+
+function PlayerProfile:_setRecursive(keyToSet: string, valueToSet: any, tableToSearch: {}, path: { string })
 	tableToSearch = tableToSearch or self._profile.Data
 	path = path or {}
 
@@ -86,38 +122,52 @@ function PlayerProfile:Set(keyToSet: string, valueToSet: any, tableToSearch: {},
 	return false
 end
 
-function PlayerProfile:GetPlayer()
-	return self._player
-end
-
-function PlayerProfile:GetProfile()
-	return self._profile
-end
-
-function PlayerProfile:IsActive()
-	return self._profile:IsActive()
-end
-
-function PlayerProfile:Increment(currency: string, amount: number)
-	local retrieved = self:Get(currency)
+function PlayerProfile:Increment(currencyPath: string | { string }, amount: number): any
+	local retrieved = self:Get(currencyPath)
 	local newAmount = retrieved + amount
 
 	if newAmount < 0 then
 		newAmount = 0
 	end
 
-	self:Set(currency, newAmount)
+	return self:Set(currencyPath, newAmount)
 end
 
-function PlayerProfile:Decrement(currency: string, amount: number)
-	local retrieved = self:Get(currency)
+function PlayerProfile:Decrement(currencyPath: string | { string }, amount: number): any
+	local retrieved = self:Get(currencyPath)
 	local newAmount = retrieved - amount
 
 	if newAmount < 0 then
 		newAmount = 0
 	end
 
-	self:Set(currency, newAmount)
+	return self:Set(currencyPath, newAmount)
 end
+
+function PlayerProfile:CanAfford(currencyPath: string | { string }, cost: number): boolean
+	local currentAmount = self:Get(currencyPath) or 0
+	return currentAmount >= cost
+end
+
+function PlayerProfile:GetPlayer()
+	return self._player
+end
+
+function PlayerProfile:GetUserId()
+	return self._userId
+end
+
+function PlayerProfile:GetProfile()
+	return self._profile
+end
+
+function PlayerProfile:GetReplica()
+	return self._replica
+end
+
+function PlayerProfile:IsActive()
+	return self._profile:IsActive()
+end
+
 
 return PlayerProfile

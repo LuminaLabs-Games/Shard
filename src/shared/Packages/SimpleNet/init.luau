@@ -14,10 +14,10 @@ local SimpleNet = {}
 export type RemoteEvent = {
 	--- **Server:** fires to the given player. **Client:** fires the server
 	Fire: (self: RemoteEvent, player: Player?, ...any?) -> RemoteEvent,
-	
+
 	--- **Client Only:** fires the server
 	FireServer: (self: RemoteEvent, ...any) -> RemoteEvent,
-	
+
 	--- **Server Only:** fires to the given player
 	FireClient: (self: RemoteEvent, player: Player, ...any) -> RemoteEvent,
 
@@ -35,12 +35,15 @@ export type RemoteEvent = {
 
 	--- **Server Only:** Fires to all clients *except* those filtered out
 	FireAllExceptFilter: (self: RemoteEvent, (player: Player) -> boolean, ...any) -> RemoteEvent,
-	
-	--- **Client Or Server:** Fires with a delay 
+
+	--- **Client Or Server:** Fires with a delay
 	FireDelayed: (self: RemoteEvent, player: Player, number, ...any) -> RemoteEvent,
 
-	--- **Client Or Server:** Connects a function to be called when the event is fired. **Client**: No player argument in callback. **Server**: Player argument in callback 
+	--- **Client Or Server:** Connects a function to be called when the event is fired. **Client**: No player argument in callback. **Server**: Player argument in callback
 	Connect: (self: RemoteEvent, callback: ContextualCallback) -> RemoteEvent,
+
+	--- **Client Or Server:** Connects a function to be called once when the event is fired. **Client**: No player argument in callback. **Server**: Player argument in callback
+	Once: (self: RemoteEvent, callback: ContextualCallback) -> RemoteEvent,
 
 	--- Cleans up the RemoteEvent
 	Destroy: (self: RemoteEvent) -> (),
@@ -56,46 +59,45 @@ export type RemoteFunction = {
 	--- **Client to Server:** Invokes the remote function after a delay (client to server)
 	InvokeDelayed: (number, ...any) -> any,
 
-    --- **Server Only:** Sets the callback for when the remote function is invoked
+	--- **Server Only:** Sets the callback for when the remote function is invoked
 	Connect: (self: RemoteFunction, callback: (any, ...any) -> ()) -> RemoteFunction,
 
 	--- **Server Only:** Sets the callback for when the remote function is invoked
 	OnServerInvoke: (self: RemoteFunction, callback: (any, ...any) -> ()) -> RemoteFunction,
-	
+
 	--- Cleans up the RemoteFunction
 	Destroy: () -> any,
 }
 
 export type BindableEvent = {
-    --- Fires the event
-    Fire: (self: BindableEvent, ...any) -> (),
+	--- Fires the event
+	Fire: (self: BindableEvent, ...any) -> (),
 
-    --- Fires the event after a delay
-    FireDelayed: (self: BindableEvent, delay: number, ...any) -> (),
+	--- Fires the event after a delay
+	FireDelayed: (self: BindableEvent, delay: number, ...any) -> (),
 
-    --- Connects to the event
-    Connect: (self: BindableEvent, callback: (...any) -> ()) -> RBXScriptConnection,
+	--- Connects to the event
+	Connect: (self: BindableEvent, callback: (...any) -> ()) -> RBXScriptConnection,
 
-    --- Destroys the bindable event
-    Destroy: (self: BindableEvent) -> ()
+	--- Destroys the bindable event
+	Destroy: (self: BindableEvent) -> (),
 }
 
-
 export type BindableFunction = {
-    --- Calls the function
-    Invoke: (self: BindableFunction, ...any) -> any,
+	--- Calls the function
+	Invoke: (self: BindableFunction, ...any) -> any,
 
-    --- Calls the function after a delay
-    InvokeDelayed: (self: BindableFunction, delay: number, ...any) -> (),
+	--- Calls the function after a delay
+	InvokeDelayed: (self: BindableFunction, delay: number, ...any) -> (),
 
-    --- Sets the function callback
-    Connect: (self: BindableFunction, callback: (...any) -> any) -> (),
-	
 	--- Sets the function callback
-    OnInvoke: (self: BindableFunction, callback: (...any) -> any) -> (),
+	Connect: (self: BindableFunction, callback: (...any) -> any) -> (),
 
-    --- Destroys the bindable function
-    Destroy: (self: BindableFunction) -> ()
+	--- Sets the function callback
+	OnInvoke: (self: BindableFunction, callback: (...any) -> any) -> (),
+
+	--- Destroys the bindable function
+	Destroy: (self: BindableFunction) -> (),
 }
 
 export type ContextualCallback = (Player, ...any) -> () | (...any) -> ()

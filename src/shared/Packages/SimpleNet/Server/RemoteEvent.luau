@@ -70,6 +70,12 @@ function RemoteEvent:Connect(callback: (player: Player, args: any) -> ()): ()
 	end)
 end
 
+function RemoteEvent:Once(callback: (player: Player, args: any) -> ()): ()
+	self._remoteEvent.OnServerEvent:Once(function(player: Player, ...: any): ()
+		callback(player, ...)
+	end)
+end
+
 function RemoteEvent:Destroy()
 	self._remoteEvent:Destroy()
 end

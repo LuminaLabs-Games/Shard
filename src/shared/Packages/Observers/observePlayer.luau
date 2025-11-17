@@ -1,5 +1,7 @@
 --!strict
 
+type Callback = (player: Player) -> (() -> ())?
+
 local Players = game:GetService("Players")
 
 --[=[
@@ -11,18 +13,19 @@ local Players = game:GetService("Players")
 	observePlayer(function(player)
 		print("Player entered game", player.Name)
 
-		return function()
+		return function(exitReason)
 			-- Cleanup
-			print("Player left game (or observer stopped)", player.Name)
+			print("Player left game", player.Name, "reason", exitReason.Name)
 		end
 	end)
 	```
 ]=]
-local function observePlayer(callback: (player: Player) -> (() -> ())?): () -> ()
+local function observePlayer(callback: Callback): () -> ()
 	local playerAddedConn: RBXScriptConnection
 	local playerRemovingConn: RBXScriptConnection
 
-	local cleanupsPerPlayer: { [Player]: () -> () } = {}
+	local cleanupsPerPlayer: { [Player]: (exitReason: Enum.PlayerExitReason) -> () } = {}
+	local inflight: { [Player]: Enum.PlayerExitReason } = {}
 
 	local function OnPlayerAdded(player: Player)
 		if not playerAddedConn.Connected then
@@ -30,22 +33,28 @@ local function observePlayer(callback: (player: Player) -> (() -> ())?): () -> (
 		end
 
 		task.spawn(function()
-			local cleanup = callback(player)
+			inflight[player] = Enum.PlayerExitReason.Unknown
+			local cleanup = (callback :: any)(player)
 			if typeof(cleanup) == "function" then
 				if playerAddedConn.Connected and player.Parent then
 					cleanupsPerPlayer[player] = cleanup
 				else
-					task.spawn(cleanup)
+					task.spawn(cleanup, inflight[player])
 				end
 			end
+			inflight[player] = nil
 		end)
 	end
 
-	local function OnPlayerRemoving(player: Player)
+	local function OnPlayerRemoving(player: Player, exitReason: Enum.PlayerExitReason)
+		if inflight[player] then
+			inflight[player] = exitReason
+		end
+
 		local cleanup = cleanupsPerPlayer[player]
 		cleanupsPerPlayer[player] = nil
 		if typeof(cleanup) == "function" then
-			task.spawn(cleanup)
+			task.spawn(cleanup, exitReason)
 		end
 	end
 
@@ -71,7 +80,7 @@ local function observePlayer(callback: (player: Player) -> (() -> ())?): () -> (
 
 		local player = next(cleanupsPerPlayer)
 		while player do
-			OnPlayerRemoving(player)
+			OnPlayerRemoving(player, inflight[player])
 			player = next(cleanupsPerPlayer)
 		end
 	end
