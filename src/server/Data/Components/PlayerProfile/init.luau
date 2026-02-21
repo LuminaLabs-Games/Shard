@@ -66,14 +66,15 @@ end
 
 function PlayerProfile:_getRecursive(keyToGet: string, tableToSearch: {}): any
 	tableToSearch = tableToSearch or self._profile.Data
-	for key, value in tableToSearch do
-		if key == keyToGet then
-			return value
-		end
 
+	if tableToSearch[keyToGet] ~= nil then
+		return tableToSearch[keyToGet]
+	end
+
+	for key, value in tableToSearch do
 		if typeof(value) == "table" then
-			local result = self:Get(keyToGet, value)
-			if result then
+			local result = self:_getRecursive(keyToGet, value)
+			if result ~= nil then
 				return result
 			end
 		end
@@ -101,18 +102,18 @@ function PlayerProfile:_setRecursive(keyToSet: string, valueToSet: any, tableToS
 	tableToSearch = tableToSearch or self._profile.Data
 	path = path or {}
 
-	for key, currentValue in tableToSearch do
+	if tableToSearch[keyToSet] ~= nil then
 		local newPath = { unpack(path) }
-		table.insert(newPath, key)
+		table.insert(newPath, keyToSet)
+		self._replica:Set(newPath, valueToSet)
+		return true
+	end
 
-		if key == keyToSet then
-			-- tableToSearch[key] = valueToSet
-			self._replica:Set(newPath, valueToSet)
-			return true
-		end
-
+	for key, currentValue in tableToSearch do
 		if typeof(currentValue) == "table" then
-			local result = self:Set(keyToSet, valueToSet, currentValue, newPath)
+			local newPath = { unpack(path) }
+			table.insert(newPath, key)
+			local result = self:_setRecursive(keyToSet, valueToSet, currentValue, newPath)
 			if result then
 				return true
 			end
