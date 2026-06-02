@@ -50,6 +50,9 @@ function PlayerProfile:Get(path: string | { string }): any
 	end
 
 	if typeof(path) == "string" then
+		if self._profile.Data[path] ~= nil then
+			return self._profile.Data[path]
+		end
 		return self:_getRecursive(path)
 	elseif typeof(path) == "table" then
 		local currentTable = self._profile.Data
@@ -66,12 +69,11 @@ end
 
 function PlayerProfile:_getRecursive(keyToGet: string, tableToSearch: {}): any
 	tableToSearch = tableToSearch or self._profile.Data
-
-	if tableToSearch[keyToGet] ~= nil then
-		return tableToSearch[keyToGet]
-	end
-
 	for key, value in tableToSearch do
+		if key == keyToGet then
+			return value
+		end
+
 		if typeof(value) == "table" then
 			local result = self:_getRecursive(keyToGet, value)
 			if result ~= nil then
@@ -89,6 +91,10 @@ function PlayerProfile:Set(path: string | { string }, value: any): any
 	end
 
 	if typeof(path) == "string" then
+		if self._profile.Data[path] ~= nil then
+			self._replica:Set({ path }, value)
+			return value
+		end
 		return if self:_setRecursive(path, value) then value else nil
 	elseif typeof(path) == "table" then
 		self._replica:Set(path, value)
@@ -102,17 +108,17 @@ function PlayerProfile:_setRecursive(keyToSet: string, valueToSet: any, tableToS
 	tableToSearch = tableToSearch or self._profile.Data
 	path = path or {}
 
-	if tableToSearch[keyToSet] ~= nil then
-		local newPath = { unpack(path) }
-		table.insert(newPath, keyToSet)
-		self._replica:Set(newPath, valueToSet)
-		return true
-	end
-
 	for key, currentValue in tableToSearch do
+		local newPath = { unpack(path) }
+		table.insert(newPath, key)
+
+		if key == keyToSet then
+			-- tableToSearch[key] = valueToSet
+			self._replica:Set(newPath, valueToSet)
+			return true
+		end
+
 		if typeof(currentValue) == "table" then
-			local newPath = { unpack(path) }
-			table.insert(newPath, key)
 			local result = self:_setRecursive(keyToSet, valueToSet, currentValue, newPath)
 			if result then
 				return true
@@ -125,6 +131,10 @@ end
 
 function PlayerProfile:Increment(currencyPath: string | { string }, amount: number): any
 	local retrieved = self:Get(currencyPath)
+	if retrieved == nil then
+		return
+	end
+
 	local newAmount = retrieved + amount
 
 	if newAmount < 0 then
@@ -136,6 +146,10 @@ end
 
 function PlayerProfile:Decrement(currencyPath: string | { string }, amount: number): any
 	local retrieved = self:Get(currencyPath)
+	if retrieved == nil then
+		return
+	end
+
 	local newAmount = retrieved - amount
 
 	if newAmount < 0 then
