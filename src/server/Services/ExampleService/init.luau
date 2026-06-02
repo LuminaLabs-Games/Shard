@@ -1,26 +1,19 @@
-local ExampleService = {}
-ExampleService.__index = ExampleService
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-type self = {
-	new: () -> ExampleService,
-	initialize: () -> (),
-	start: () -> ()
-}
+local Shard = require(ReplicatedStorage.Packages.Shard)
+local Test = Shard.new("Test")
+	:withDependencies({ "Other" })
+	:withLifecycle({
+		init = function(self) end,
 
-export type ExampleService = typeof(setmetatable({} :: self, ExampleService))
+		start = function(self) end,
+	})
+	:withRemoteEvents({
+		{
+			TestEvent = function(data)
+				print("Test event received:", data)
+			end,
+		},
+	})
 
-function ExampleService.new(): ExampleService
-	local self = setmetatable({} :: self, ExampleService)
-
-	return self
-end
-
-function ExampleService:initialize()
-
-end
-
-function ExampleService:start()
-	
-end
-
-return ExampleService
+return Test

@@ -3,12 +3,24 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "$path": "src/shared",
-      "$ignoreUnknownInstances": true
+      "shared": {
+        "$path": "src/shared",
+        "$ignoreUnknownInstances": true
+      },
+      "Packages": {
+        "$path": "Packages",
+        "$ignoreUnknownInstances": true
+      }
     },
     "ServerScriptService": {
-      "$path": "src/server",
-      "$ignoreUnknownInstances": true
+      "server": {
+        "$path": "src/server",
+        "$ignoreUnknownInstances": true
+      },
+      "ServerPackages": {
+        "$path": "ServerPackages",
+        "$ignoreUnknownInstances": true
+      }
     },
     "StarterPlayer": {
       "$className": "StarterPlayer",

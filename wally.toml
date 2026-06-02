@@ -1,0 +1,26 @@
+[package]
+name = "luminalabs-games/shard"
+version = "0.1.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+Shard = "luminalabsgames/shard@1.0.2"
+Trove = "sleitnick/trove@1.8.0"
+Promise = "evaera/promise@4.0.0"
+Cmdr = "evaera/cmdr@1.12.0"
+TopbarPlus = "1foreverhd/topbarplus@3.4.0"
+ZonePlus = "mattschrubb/zoneplus@3.2.0"
+Signal = "sleitnick/signal@2.0.3"
+SimpleNet = "luminalabsgames/simplenet@1.0.1"
+Dispatcher = "luminalabsgames/dispatcher@1.0.2"
+Observers = "sleitnick/observers@0.4.0"
+ReplicaShared = "luminalabsgames/replicashared@1.0.0"
+ReplicaClient = "luminalabsgames/replicaclient@1.0.0"
+ReplicaServer = "luminalabsgames/replicaserver@1.0.3"
+Value = "luminalabsgames/value@1.0.2"
+
+# gameanalytics-sdk = "gameanalytics/gameanalytics-sdk@2.2.6"
+
+[server-dependencies]
+ProfileStore = "lm-loleris/profilestore@1.0.3"

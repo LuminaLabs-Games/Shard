@@ -1,6 +1,8 @@
 return {
 	DEBUG_MOCK = true,
-	SUFFIX = "_DEVELOPMENT_01a",
+	PRODUCTION_PLACE_ID = 0,
+	DEVELOPMENT_SUFFIX = "_DEVELOPMENT_01a",
+	PRODUCTION_SUFFIX = "_PRODUCTION",
 	TEMPLATE = {
 		-- Player Data Template:
 		--[[ Example:

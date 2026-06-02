@@ -1,89 +1,34 @@
-while workspace:GetAttribute("__ShardServerLoaded") ~= true do
-	print("Waiting for server to load...")
+repeat
 	task.wait()
-end
+until workspace:GetAttribute("ShardServerStarted") ~= nil and workspace:GetAttribute("ShardServerStarted") == true
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
-local Packages = ReplicatedStorage:WaitForChild("Packages")
+local ReplicaClient = require(ReplicatedStorage.Packages.ReplicaClient)
+local Promise = require(ReplicatedStorage.Packages.Promise)
+local Shard = require(ReplicatedStorage.Packages.Shard)
 
-local Framework = require(ReplicatedStorage.Configs.Framework)
-local ReplicaClient = require(ReplicatedStorage.Libraries.Replica.ReplicaClient)
-local GetModule = require(ReplicatedStorage.Packages.GetModule)
-local Promise = require(Packages:WaitForChild("Promise"))
-local start = tick()
-
-GetModule.Debug = Framework.GET_MODULE_DEBUG
-
-local totalModules = #script:GetChildren()
-local loaded = 0
-local initialized = {}
-
-local function loadModule(module)
-	if Framework.DEV_MODE and RunService:IsStudio() then
-		task.spawn(function()
-			local success, err = pcall(function()
-				local required = require(module)
-
-				if required.new then
-					required = required.new({}) -- You can pass any arguments you want to the constructor here as DI
-				end
-
-				if required.initialize then
-					required:initialize()
-				end
-
-				initialized[module.Name] = required
-				GetModule:Add(required, module.Name)
-			end)
-
-			if not success then
-				warn(`🚫 {err}`)
-			end
-
-			loaded += 1
-		end)
-	else
-		local required = require(module)
-
-		if required.new then
-			required = required:new({}) -- You can pass any arguments you want to the constructor here as DI
-		end
-
-		if required.initialize then
-			required:initialize()
-		end
-
-		initialized[module.Name] = required
-		GetModule:Add(required, module.Name)
+for _, controller in script:GetChildren() do
+	if controller:IsA("ModuleScript") then
+		require(controller)
 	end
 end
 
-Promise.new(function(resolve, reject)
-	for _, module in script:GetChildren() do
-		loadModule(module)
-	end
+local start = workspace:GetServerTimeNow()
 
-	if Framework.DEV_MODE and RunService:IsStudio() then
-		while loaded < totalModules do
-			task.wait()
-		end
-	end
-
-	for name, module in initialized do
-		if module.start then
-			module:start()
-		end
-		print(`🚀 Loaded {name}`)
-	end
-
+Promise.new(function(resolve)
+	Shard.init()
 	resolve()
 end)
 	:andThen(function()
-		print(`✅ Client Loaded Successfully in {tick() - start}s`)
+		Shard.start()
+	end)
+	:andThen(function()
+		print("[SHARD]", workspace:GetServerTimeNow() - start, "ms to init and start controllers")
+		-- print("All controllers initialized and started successfully.")
+		workspace:SetAttribute("ShardClientStarted", true)
 		ReplicaClient.RequestData()
 	end)
 	:catch(function(err)
-		warn(err)
+		warn("Error starting services:", err)
 	end)
